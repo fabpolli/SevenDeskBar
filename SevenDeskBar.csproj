@@ -19,6 +19,10 @@
     <Nullable>disable</Nullable>
     <!-- le risorse .resx contengono immagini: richiesto dal motore di build di dotnet -->
     <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
+    <!-- compilazione riproducibile: nell'eseguibile e nel file .pdb non finiscono
+         i percorsi delle cartelle del PC su cui si compila -->
+    <Deterministic>true</Deterministic>
+    <PathMap>$(MSBuildProjectDirectory)\=SevenDeskBar\</PathMap>
   </PropertyGroup>
   <ItemGroup>
     <!-- copia storica dei sorgenti, non fa parte della compilazione -->
