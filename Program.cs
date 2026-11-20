@@ -41,6 +41,12 @@ namespace SevenDeskBar
         [STAThread]
         static void Main()
         {
+            //Se la barra viene avviata da un terminale di VS Code (o da un altro programma
+            //basato su Electron) eredita ELECTRON_RUN_AS_NODE=1 e la passa ai programmi che
+            //lancia: Code.exe e le altre applicazioni Electron partirebbero come semplice
+            //Node.js e si chiuderebbero subito senza aprire alcuna finestra.
+            Environment.SetEnvironmentVariable("ELECTRON_RUN_AS_NODE", null);
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Program.bRebootNeeded = true;

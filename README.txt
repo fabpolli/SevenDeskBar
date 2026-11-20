@@ -1,3 +1,7 @@
+Version 1.2.0.1
+=============================
+Fixed: Visual Studio Code (and other Electron applications) did not start from the toolbar when the toolbar had been launched from a VS Code terminal
+	(the inherited ELECTRON_RUN_AS_NODE variable is now removed at startup)
 Version 1.2.0.0
 =============================
 Native high DPI support (per monitor): toolbar, icons, texts and windows are drawn sharp at any zoom level and are redrawn when the zoom changes
