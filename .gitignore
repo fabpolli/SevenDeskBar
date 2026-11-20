@@ -18,3 +18,7 @@ UpgradeLog*.htm
 
 # Vecchia copia dei sorgenti usata per preparare la distribuzione (sostituita dalla storia git)
 Distribution/
+
+# Scheda PAD per i siti di download: contiene nome e indirizzi email dell'autore
+Application.pad
+Application.xml
