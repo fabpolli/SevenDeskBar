@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -206,7 +206,7 @@
     <value>Large icons</value>
   </data>
   <data name="CheckboxAutoHide.Location" type="System.Drawing.Point, System.Drawing">
-    <value>19, 353</value>
+    <value>19, 339</value>
   </data>
   <data name="CheckboxAutoHide.Size" type="System.Drawing.Size, System.Drawing">
     <value>95, 17</value>

@@ -58,6 +58,13 @@ namespace SevenDeskBar
 
         private static void ChangeObjLang(object sender)
         {
+            //La toolbar non ha testi da tradurre (il menu contestuale viene tradotto
+            //all'apertura): riapplicare le risorse ne ripristinerebbe dimensioni e
+            //posizione originali, causando inutili riposizionamenti della barra.
+            if (sender is DesktopToolbar)
+            {
+                return;
+            }
             if (sender is System.Windows.Forms.Form)
             {
                 System.Windows.Forms.Form CurForm = (System.Windows.Forms.Form)sender;

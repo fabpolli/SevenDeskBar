@@ -159,4 +159,73 @@
   <data name="OrderDataDeleted" xml:space="preserve">
     <value>Clasificación de datos iconos eliminado</value>
   </data>
+  <data name="SettingsFontButton" xml:space="preserve">
+    <value>&amp;Fuente...</value>
+  </data>
+  <data name="SettingsColorButton" xml:space="preserve">
+    <value>C&amp;olor del texto...</value>
+  </data>
+  <data name="SettingsFontReset" xml:space="preserve">
+    <value>Predeterminado</value>
+  </data>
+  <data name="SettingsFontPreview" xml:space="preserve">
+    <value>Texto de ejemplo</value>
+  </data>
+  <data name="SettingsOverflowLabel" xml:space="preserve">
+    <value>Elementos sobrantes</value>
+  </data>
+  <data name="SettingsOverflowPopup" xml:space="preserve">
+    <value>Lista emergente</value>
+  </data>
+  <data name="SettingsOverflowScroll" xml:space="preserve">
+    <value>Desplazar la barra</value>
+  </data>
+  <data name="SettingsOverflowColumns" xml:space="preserve">
+    <value>Columnas de la lista</value>
+  </data>
+  <data name="ToolbarMoreItems" xml:space="preserve">
+    <value>Más elementos</value>
+  </data>
+  <data name="ToolbarScrollBack" xml:space="preserve">
+    <value>Desplazar hacia atrás</value>
+  </data>
+  <data name="ToolbarScrollForward" xml:space="preserve">
+    <value>Desplazar hacia adelante</value>
+  </data>
+  <data name="FolderOptionsTitle" xml:space="preserve">
+    <value>Opciones de carpeta</value>
+  </data>
+  <data name="FolderOptionsPath" xml:space="preserve">
+    <value>Carpeta</value>
+  </data>
+  <data name="FolderOptionsBrowse" xml:space="preserve">
+    <value>&amp;Examinar...</value>
+  </data>
+  <data name="FolderOptionsCaption" xml:space="preserve">
+    <value>Mostrar el título con el nombre de la carpeta</value>
+  </data>
+  <data name="FolderOptionsText" xml:space="preserve">
+    <value>Mostrar texto</value>
+  </data>
+  <data name="FolderOptionsLarge" xml:space="preserve">
+    <value>Iconos grandes</value>
+  </data>
+  <data name="FolderOptionsEnd" xml:space="preserve">
+    <value>Alinear al final de la barra (abajo / a la derecha)</value>
+  </data>
+  <data name="FolderOptionsHint" xml:space="preserve">
+    <value>Casilla parcialmente marcada = usar la configuración general</value>
+  </data>
+  <data name="FolderOptionsSave" xml:space="preserve">
+    <value>&amp;Guardar</value>
+  </data>
+  <data name="FolderOptionsCancel" xml:space="preserve">
+    <value>&amp;Cancelar</value>
+  </data>
+  <data name="SettingsFolderOptionsButton" xml:space="preserve">
+    <value>&amp;Opciones...</value>
+  </data>
+  <data name="ErrorCreateShortcut" xml:space="preserve">
+    <value>No se puede crear el acceso directo a "{0}" en la carpeta "{1}":</value>
+  </data>
 </root>

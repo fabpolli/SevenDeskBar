@@ -28,6 +28,17 @@ namespace SevenDeskBar
         private int _OldMilliseconds = 0;
         private Color _OldBackColor;
         private Color _OldToolbarBackColor;
+        private Font _DefaultToolbarFont;
+        private Color _DefaultToolbarForeColor;
+        private Color _CustomTextColor = Color.Empty;
+        private readonly List<FileSystemWatcher> _Watchers = new List<FileSystemWatcher>();
+
+        // Gestione cambi di risoluzione / zoom / monitor
+        private const int WM_DISPLAYCHANGE = 0x007E;
+        private const int WM_SETTINGCHANGE = 0x001A;
+        private const int WM_DPICHANGED = 0x02E0;
+        private System.Windows.Forms.Timer _DisplayChangeTimer;
+        private string _DisplaySignature;
 
         delegate void DisposeToolbarObjectsCallback();
 
@@ -35,15 +46,117 @@ namespace SevenDeskBar
         {
             LanguageManager.ChangeLanguage(this);
             InitializeComponent();
-            ShellApi.SetWindowLong(this.Handle, ShellApi.GWL_EXSTYLE,
-                    ShellApi.GetWindowLong(this.Handle, ShellApi.GWL_EXSTYLE) |
-                            ShellApi.WS_EX_TOOLWINDOW);
+            // WS_EX_TOOLWINDOW (esclusione da Alt+Tab) ora è impostato in DesktopToolbar.CreateParams
+            this._DefaultToolbarFont = this.MainToolbar.Font;
+            this._DefaultToolbarForeColor = this.MainToolbar.ForeColor;
 
+            this._DisplayChangeTimer = new System.Windows.Forms.Timer();
+            this._DisplayChangeTimer.Interval = 800;
+            this._DisplayChangeTimer.Tick += new EventHandler(this.DisplayChangeTimer_Tick);
+            Microsoft.Win32.SystemEvents.DisplaySettingsChanged += new EventHandler(this.SystemDisplayEvent);
+            Microsoft.Win32.SystemEvents.UserPreferenceChanged += new Microsoft.Win32.UserPreferenceChangedEventHandler(this.SystemDisplayEvent);
+
+            this.InitOverflowHandling();
+            this.InitDragDropHandling();
         }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= new EventHandler(this.SystemDisplayEvent);
+            Microsoft.Win32.SystemEvents.UserPreferenceChanged -= new Microsoft.Win32.UserPreferenceChangedEventHandler(this.SystemDisplayEvent);
+            this._DisplayChangeTimer.Stop();
+            this.DisposeWatchers();
+            base.OnFormClosed(e);
+        }
+
+        #region Adeguamento a risoluzione / zoom / monitor
+
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == WM_DPICHANGED)
+            {
+                //Cambio di zoom del monitor: la barra viene ridisegnata da LoadObjects con le
+                //nuove misure. Il messaggio non viene passato a Windows Forms, che altrimenti
+                //ridimensionerebbe e sposterebbe la finestra per conto suo.
+                this.ScheduleDisplayCheck();
+                m.Result = IntPtr.Zero;
+                return;
+            }
+            if (m.Msg == WM_DISPLAYCHANGE || m.Msg == WM_SETTINGCHANGE)
+            {
+                this.ScheduleDisplayCheck();
+            }
+            base.WndProc(ref m);
+        }
+
+        private void SystemDisplayEvent(object sender, EventArgs e)
+        {
+            if (this.IsDisposed || !this.IsHandleCreated)
+            {
+                return;
+            }
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new MethodInvoker(this.ScheduleDisplayCheck));
+            }
+            else
+            {
+                this.ScheduleDisplayCheck();
+            }
+        }
+
+        private void ScheduleDisplayCheck()
+        {
+            if (this._DisplayChangeTimer == null)
+            {
+                return;
+            }
+            // più eventi ravvicinati (cambio risoluzione + DPI + area di lavoro) => un solo ridisegno
+            this._DisplayChangeTimer.Stop();
+            this._DisplayChangeTimer.Start();
+        }
+
+        /// <summary>
+        /// "Firma" della configurazione video: se non cambia non serve ridisegnare.
+        /// Evita anche cicli infiniti, perché la toolbar stessa modifica l'area di lavoro
+        /// dello schermo (e quindi genera WM_SETTINGCHANGE) quando si riposiziona.
+        /// </summary>
+        private string ComputeDisplaySignature()
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (Screen s in Screen.AllScreens)
+            {
+                sb.Append(s.DeviceName).Append(':').Append(s.Bounds.ToString()).Append(s.Primary ? "P" : "").Append(';');
+            }
+            sb.Append(SystemInformation.PrimaryMonitorSize.ToString());
+            sb.Append(";dpi=").Append(DockMonitorDpi());
+            return sb.ToString();
+        }
+
+        private void DisplayChangeTimer_Tick(object sender, EventArgs e)
+        {
+            this._DisplayChangeTimer.Stop();
+            string NewSignature = this.ComputeDisplaySignature();
+            if (NewSignature == this._DisplaySignature)
+            {
+                return;
+            }
+            this._DisplaySignature = NewSignature;
+            this.CloseOverflowPopup();
+            this.RefreshToolbar(true);
+            if (this._AutoHide)
+            {
+                this.timerAutoHide.Interval = 1000;
+                this.timerAutoHide.Enabled = true;
+            }
+        }
+
+        #endregion
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            
+            this._DisplaySignature = this.ComputeDisplaySignature();
+
             SevenDeskBar.Properties.Settings MySettings = new SevenDeskBar.Properties.Settings();
             MySettings.Reload();
             LanguageManager.ChangeLanguage(this);
@@ -54,6 +167,12 @@ namespace SevenDeskBar
             {
                 MySettings.Upgrade();
                 MySettings.Reload();
+                if (String.IsNullOrEmpty(MySettings.IncludedFolders))
+                {
+                    //impostazioni delle versioni 1.0.x (.NET 2.0), salvate in un'altra cartella
+                    LegacySettings.ImportFromPreviousVersion(MySettings);
+                    MySettings.Reload();
+                }
                 this._AutoHide = MySettings.AutoHide;
                 this._AutoHideInterval = MySettings.AutoHideInterval;
                 FoldersToAnalize = MySettings.IncludedFolders;
@@ -101,9 +220,35 @@ namespace SevenDeskBar
             
             watcher.Path = FolderToWatch ;
 
-            //Enable the FileSystemWatcher events. 
+            //Enable the FileSystemWatcher events.
             watcher.EnableRaisingEvents = true;
+            lock (this._Watchers)
+            {
+                this._Watchers.Add(watcher);
+            }
+        }
 
+        /// <summary>
+        /// Rilascia i FileSystemWatcher creati al caricamento precedente
+        /// (prima ad ogni aggiornamento della toolbar se ne aggiungevano di nuovi)
+        /// </summary>
+        private void DisposeWatchers()
+        {
+            lock (this._Watchers)
+            {
+                foreach (FileSystemWatcher AttWatch in this._Watchers)
+                {
+                    try
+                    {
+                        AttWatch.EnableRaisingEvents = false;
+                        AttWatch.Dispose();
+                    }
+                    catch
+                    {
+                    }
+                }
+                this._Watchers.Clear();
+            }
         }
 
         private void watcher_FolderChange(object sender, FileSystemEventArgs e)
@@ -111,6 +256,11 @@ namespace SevenDeskBar
             if (sender is FileSystemWatcher)
             {
                 FileSystemWatcher AttWatch = (FileSystemWatcher)sender;
+                AttWatch.EnableRaisingEvents = false;
+                lock (this._Watchers)
+                {
+                    this._Watchers.Remove(AttWatch);
+                }
                 AttWatch.Dispose();
             }
             if (this.InvokeRequired)
@@ -128,8 +278,15 @@ namespace SevenDeskBar
         {
             while (this.MainToolbar.Items.Count > 0)
             {
-                this.MainToolbar.Items[0].Dispose();
+                ToolStripItem AttItem = this.MainToolbar.Items[0];
+                Image AttImage = AttItem.Image;
+                AttItem.Dispose();
+                if (AttImage != null)
+                {
+                    AttImage.Dispose();
+                }
             }
+            this._ItemFolder.Clear();
         }
 
         private void RefreshToolbar()
@@ -140,6 +297,8 @@ namespace SevenDeskBar
 
         private void RefreshToolbar(bool ReEdge)
         {
+            this.CloseOverflowPopup();
+            this._ScrollOffset = 0;
             if (this.InvokeRequired)
             {
                 DisposeToolbarObjectsCallback d = new DisposeToolbarObjectsCallback(DisposeToolbarObjects);
@@ -170,53 +329,133 @@ namespace SevenDeskBar
         }
 
 
+        /// <summary>Opzioni effettive (generali + specifiche) usate per caricare una cartella</summary>
+        private class FolderLoadOptions
+        {
+            public bool SetCaption;
+            public bool ShowText;
+            public bool LargeIcons;
+            public bool AlignEnd;
+            public bool FolderWatcher;
+            public bool TopOrBottom;
+            public bool EnableGlass;
+            public bool ShowHidden;
+        }
+
+        // Fattore di zoom del monitor (1 = 100%, 1.5 = 150% ...) e font scalato corrente
+        private float _Scale = 1f;
+        private Font _ScaledToolbarFont;
+        // cartella di appartenenza di ogni elemento della toolbar (per il drag & drop)
+        private readonly Dictionary<ToolStripItem, string> _ItemFolder = new Dictionary<ToolStripItem, string>();
+
+        private int Scaled(int Value)
+        {
+            return (int)Math.Round(Value * this._Scale);
+        }
+
         private void LoadObjects(bool OnLoadingApp)
         {
             this.SuspendLayout();
             SevenDeskBar.Properties.Settings MySettings = new SevenDeskBar.Properties.Settings();
             MySettings.Reload();
             string FoldersToAnalize = MySettings.IncludedFolders;
-            int StandardHeightWidth = MySettings.ToolbarHeightWidth;
             string[] FolderArray = FoldersToAnalize.Split('|');
-            bool LargeIcons = MySettings.LargeIcons;
+            Dictionary<string, FolderOptions> AllFolderOptions = FolderOptions.Parse(MySettings.FolderOptions);
             bool NoError = true;
             string ErrorMessages = "";
             this._AutoHide = MySettings.AutoHide;
             this._AutoHideInterval = MySettings.AutoHideInterval;
             this.ToolbarIsHide = !this._AutoHide;
             bool EnableGlass = MySettings.GlassStyleEffect;
-            bool ShowHidden = MySettings.ShowHidden;
-            if (LargeIcons)
+            this._OverflowMode = MySettings.OverflowMode;
+            this._OverflowColumns = Math.Max(1, MySettings.OverflowColumns);
+            this.DisposeWatchers();
+            this._ItemFolder.Clear();
+
+            //Zoom (DPI) del monitor: tutte le misure sono in pixel fisici
+            int MonitorDpi = DockMonitorDpi();
+            this._Scale = MonitorDpi / 96f;
+            int StandardHeightWidth = this.Scaled(MySettings.ToolbarHeightWidth);
+
+            //Carattere e colore dei testi scelti dall'utente. Windows converte i punti in
+            //pixel con il DPI "di sistema": se il monitor ha uno zoom diverso il font va scalato.
+            Font BaseFont = SettingsHelper.ParseFont(MySettings.TextFont) ?? this._DefaultToolbarFont;
+            Font OldScaledFont = this._ScaledToolbarFont;
+            float FontFactor = MonitorDpi / (float)SystemDpi();
+            this._ScaledToolbarFont = new Font(BaseFont.FontFamily, BaseFont.SizeInPoints * FontFactor, BaseFont.Style, GraphicsUnit.Point);
+            this.MainToolbar.Font = this._ScaledToolbarFont;
+            if (OldScaledFont != null)
             {
-                this.MainToolbar.ImageScalingSize = new System.Drawing.Size(32, 32);
+                OldScaledFont.Dispose();
             }
-            else
-            {
-                this.MainToolbar.ImageScalingSize = new System.Drawing.Size(16, 16);
-            }
+            this._CustomTextColor = SettingsHelper.ParseColor(MySettings.TextColor);
+            this.MainToolbar.ForeColor = this._CustomTextColor.IsEmpty ? this._DefaultToolbarForeColor : this._CustomTextColor;
+
+            this.MainToolbar.ImageScalingSize = new Size(this.Scaled(MySettings.LargeIcons ? 32 : 16), this.Scaled(MySettings.LargeIcons ? 32 : 16));
             Array AppBarEdgesValues = Enum.GetValues(typeof(AppBarEdges));
             AppBarEdges AttAppBarEdge = (AppBarEdges)AppBarEdgesValues.GetValue(Convert.ToInt32(MySettings.TollbarDockPosition));
             bool TopOrBottom = AttAppBarEdge == AppBarEdges.Top || AttAppBarEdge == AppBarEdges.Bottom;
 
-            if (MySettings.ShowText)
-            {
-                this.MainToolbar.Renderer = new MyRenderer(LargeIcons, TopOrBottom);
-            }
-            else
-            {
-                this.MainToolbar.RenderMode = ToolStripRenderMode.ManagerRenderMode;
-            }
+            //il renderer decide elemento per elemento (testo sì/no, icone grandi/piccole)
+            this.MainToolbar.Renderer = new MyRenderer();
+            //la toolbar occupa sempre tutta l'area della finestra
+            this.MainToolbar.MinimumSize = Size.Empty;
+            this.MainToolbar.MaximumSize = Size.Empty;
+            this.MainToolbar.Dock = DockStyle.Fill;
+            this.MainToolbar.LayoutStyle = TopOrBottom ? ToolStripLayoutStyle.HorizontalStackWithOverflow : ToolStripLayoutStyle.VerticalStackWithOverflow;
 
+            //Le cartelle "allineate alla fine" vanno in fondo alla collezione e in ordine
+            //inverso: la ToolStrip dispone gli elementi allineati a destra/in basso
+            //partendo dal bordo.
+            List<ToolStripItem> StartItems = new List<ToolStripItem>();
+            List<ToolStripItem> EndItems = new List<ToolStripItem>();
             foreach (string AttFolder in FolderArray)
             {
                 if (!String.IsNullOrEmpty(AttFolder) && Directory.Exists(AttFolder))
                 {
-                    //Aggiungo controlli alla toolbar in base alle cartelle
-                    //incluse
-                    NoError = NoError && AnalyzeFolder(AttFolder, MySettings.FolderCaption, ref ErrorMessages, AttAppBarEdge, MySettings.FolderActiveControl, LargeIcons, MySettings.ShowText, TopOrBottom, EnableGlass, ShowHidden);
+                    FolderOptions Opt;
+                    AllFolderOptions.TryGetValue(AttFolder, out Opt);
+                    FolderLoadOptions Load = new FolderLoadOptions();
+                    Load.SetCaption = Opt != null && Opt.Caption.HasValue ? Opt.Caption.Value : MySettings.FolderCaption;
+                    Load.ShowText = Opt != null && Opt.ShowText.HasValue ? Opt.ShowText.Value : MySettings.ShowText;
+                    Load.LargeIcons = Opt != null && Opt.LargeIcons.HasValue ? Opt.LargeIcons.Value : MySettings.LargeIcons;
+                    Load.AlignEnd = Opt != null && Opt.AlignEnd;
+                    Load.FolderWatcher = MySettings.FolderActiveControl;
+                    Load.TopOrBottom = TopOrBottom;
+                    Load.EnableGlass = EnableGlass;
+                    Load.ShowHidden = MySettings.ShowHidden;
+
+                    List<ToolStripItem> Target = Load.AlignEnd ? EndItems : StartItems;
+                    if (Target.Count > 0)
+                    {
+                        Target.Add(this.NewSeparator(Load.AlignEnd));
+                    }
+                    //Aggiungo controlli alla toolbar in base alle cartelle incluse
+                    //(prima un errore impediva di caricare le cartelle successive)
+                    bool FolderOk = AnalyzeFolder(AttFolder, Load, Target, ref ErrorMessages);
+                    NoError = NoError && FolderOk;
                 }
             }
-            
+            if (StartItems.Count > 0 && EndItems.Count > 0)
+            {
+                EndItems.Insert(0, this.NewSeparator(true));
+            }
+            EndItems.Reverse();
+            this.MainToolbar.SuspendLayout();
+            //Le sezioni allineate alla fine vanno PRIMA nella collezione: quando lo spazio
+            //non basta la ToolStrip scarta gli ultimi elementi della collezione, che devono
+            //essere quelli delle sezioni normali (finiscono nell'elenco » o si scorrono),
+            //non la sezione fissata in fondo. La posizione a video dipende solo dall'allineamento.
+            this.MainToolbar.Items.AddRange(EndItems.ToArray());
+            this.MainToolbar.Items.AddRange(StartItems.ToArray());
+            this.MainToolbar.ResumeLayout(false);
+
+            //Pulsanti per elementi in eccesso (elenco a comparsa o scorrimento)
+            this.CreateOverflowButtons(TopOrBottom);
+
+            //Con l'auto-hide la barra non riserva spazio sullo schermo: altrimenti ogni
+            //volta che compare/scompare tutte le finestre ingrandite vengono ridimensionate
+            this.ReserveSpace = !this._AutoHide;
             if (!OnLoadingApp)
             {
                 this.Edge = AttAppBarEdge;
@@ -224,16 +463,10 @@ namespace SevenDeskBar
             if (TopOrBottom)
             {
                 this.StandardHeight = StandardHeightWidth;
-                this.MainToolbar.MaximumSize = new System.Drawing.Size(Screen.GetWorkingArea(this).Width, this.StandardHeight);
-                this.MainToolbar.MinimumSize = new System.Drawing.Size(Screen.GetWorkingArea(this).Width, this.StandardHeight);
-                this.MainToolbar.LayoutStyle = ToolStripLayoutStyle.HorizontalStackWithOverflow;
             }
             else
             {
                 this.StandardWidth = StandardHeightWidth;
-                this.MainToolbar.MaximumSize = new System.Drawing.Size(this.StandardWidth, Screen.GetWorkingArea(this).Height);
-                this.MainToolbar.MinimumSize = new System.Drawing.Size(this.StandardWidth, Screen.GetWorkingArea(this).Height);
-                this.MainToolbar.LayoutStyle = ToolStripLayoutStyle.VerticalStackWithOverflow;
             }
             if (OnLoadingApp)
             {
@@ -249,19 +482,22 @@ namespace SevenDeskBar
                 this.FormBorderStyle = FormBorderStyle.None;
                 this.BackColor = Color.Black;
                 this.MainToolbar.BackColor = Color.Black;
-                Graphics g = this.CreateGraphics();
-                Rectangle glassRect = new Rectangle(0, 0, this.Width, this.Height);
-                Region rgn = new Region(glassRect);
-                VistaApi.DWM_BLURBEHIND bb = new VistaApi.DWM_BLURBEHIND();
-                bb.dwFlags = (VistaApi.DWM_BB_ENABLE | VistaApi.DWM_BB_BLURREGION);
-                bb.fEnable = true;
-                bb.hRgnBlur = rgn.GetHrgn(g);
-                // '#Enable blur-behind effect
-                VistaApi.DwmEnableBlurBehindWindow(this.Handle, ref bb);
+                using (Graphics g = this.CreateGraphics())
+                using (Region rgn = new Region(new Rectangle(0, 0, this.Width, this.Height)))
+                {
+                    VistaApi.DWM_BLURBEHIND bb = new VistaApi.DWM_BLURBEHIND();
+                    bb.dwFlags = (VistaApi.DWM_BB_ENABLE | VistaApi.DWM_BB_BLURREGION);
+                    bb.fEnable = true;
+                    bb.hRgnBlur = rgn.GetHrgn(g);
+                    // '#Enable blur-behind effect
+                    VistaApi.DwmEnableBlurBehindWindow(this.Handle, ref bb);
+                }
             }
             else
             {
-                this.FormBorderStyle = FormBorderStyle.FixedSingle;
+                //bordo sottile da "tool window": Windows Forms non vi applica la larghezza
+                //minima di sistema (oltre 100 pixel) e la barra può essere stretta
+                this.FormBorderStyle = FormBorderStyle.FixedToolWindow;
                 if (!this._OldBackColor.IsEmpty)
                 {
                     this.BackColor = this._OldBackColor;
@@ -269,65 +505,126 @@ namespace SevenDeskBar
                 }
             }
             this.ResumeLayout();
+            this.ApplyScroll();
             if (!NoError)
             {
                 MessageBox.Show(ErrorMessages, ResourceMessages.ErrorToolbarCreation, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
         }
 
-        private bool AnalyzeFolder(string AttFolder, bool SetCaption, ref string ErrorMessages, AppBarEdges AttEdge, bool FolderWatcher, bool LargeIcons, bool ShowText, bool TopOrBottom, bool EnableGlass, bool ShowHiddenFiles)
+        private ToolStripSeparator NewSeparator(bool AlignEnd)
+        {
+            ToolStripSeparator AttSep = new ToolStripSeparator();
+            if (AlignEnd)
+            {
+                AttSep.Alignment = ToolStripItemAlignment.Right;
+            }
+            return AttSep;
+        }
+
+        /// <summary>
+        /// Icona alla dimensione esatta richiesta. Prova nell'ordine: icone di sistema
+        /// (anche 48/256 px per zoom elevati), icona del collegamento, icona dell'eseguibile.
+        /// </summary>
+        private Bitmap LoadItemBitmap(string ItemPath, bool IsFolder, int IconSize)
+        {
+            Bitmap Result = IconHelper.GetBitmap(ItemPath, IconSize);
+            if (Result != null)
+            {
+                return Result;
+            }
+            if (!IsFolder && Path.GetExtension(ItemPath).ToUpper() == ".LNK")
+            {
+                ShellLink link = new ShellLink();
+                try
+                {
+                    link.Open(ItemPath);
+                    using (Icon FileIcon = IconSize > 16 ? link.LargeIcon : link.SmallIcon)
+                    {
+                        Result = IconHelper.FromIcon(FileIcon, IconSize);
+                    }
+                }
+                catch
+                {
+                    Result = null;
+                }
+                finally
+                {
+                    link.Dispose();
+                }
+                if (Result != null)
+                {
+                    return Result;
+                }
+            }
+            if (!IsFolder)
+            {
+                try
+                {
+                    using (Icon FileIcon = Icon.ExtractAssociatedIcon(ItemPath))
+                    {
+                        Result = IconHelper.FromIcon(FileIcon, IconSize);
+                    }
+                    if (Result != null)
+                    {
+                        return Result;
+                    }
+                }
+                catch
+                {
+                }
+            }
+            using (Icon FileIcon = IconSize > 16 ? ShellIcon.GetLargeIcon(ItemPath) : ShellIcon.GetSmallIcon(ItemPath))
+            {
+                return IconHelper.FromIcon(FileIcon, IconSize);
+            }
+        }
+
+        private bool AnalyzeFolder(string AttFolder, FolderLoadOptions Load, List<ToolStripItem> Target, ref string ErrorMessages)
         {
             bool NoError = true;
-            if (this.MainToolbar.Items.Count > 0)
-            {
-                ToolStripSeparator AttSep = new ToolStripSeparator();
-                this.MainToolbar.Items.Add(AttSep);
-            }
+            ToolStripItemAlignment Alignment = Load.AlignEnd ? ToolStripItemAlignment.Right : ToolStripItemAlignment.Left;
+            int IconSize = this.Scaled(Load.LargeIcons ? 32 : 16);
 
-            if (SetCaption)
+            if (Load.SetCaption)
             {
                 ToolStripLabel AttLbl = new ToolStripLabel();
                 AttLbl.Text = Path.GetFileName(AttFolder).ToString();
+                if (String.IsNullOrEmpty(AttLbl.Text))
+                {
+                    //radice di un disco o di una condivisione di rete
+                    AttLbl.Text = AttFolder;
+                }
                 AttLbl.TextAlign = ContentAlignment.MiddleLeft;
                 AttLbl.ToolTipText = AttLbl.Text;
                 AttLbl.Tag = AttFolder;
+                AttLbl.Alignment = Alignment;
                 AttLbl.Click += new EventHandler(this.ToolStripLabel_DoubleClick);
-                if (EnableGlass)
+                if (!this._CustomTextColor.IsEmpty)
+                {
+                    AttLbl.ForeColor = this._CustomTextColor;
+                }
+                else if (Load.EnableGlass)
                 {
                     AttLbl.ForeColor = Color.White;
                 }
-                //switch (AttEdge)
-                //{
-                //    case AppBarEdges.Top:
-                //        AttLbl.TextAlign = ContentAlignment.MiddleCenter;
-                //        break;
-                //    case AppBarEdges.Bottom:
-                //        AttLbl.TextAlign = ContentAlignment.MiddleCenter;
-                //        break;
-                //    case AppBarEdges.Left:
-                //        AttLbl.TextAlign = ContentAlignment.MiddleLeft;
-                //        break;
-                //    case AppBarEdges.Right:
-                //        AttLbl.TextAlign = ContentAlignment.MiddleRight;
-                //        break;
-                //}
-                this.MainToolbar.Items.Add(AttLbl);
-                AttLbl = null;
+                Target.Add(AttLbl);
+                this._ItemFolder[AttLbl] = AttFolder;
             }
             //Analizzo cartelle e file della directory corrente e li inserisco in un'array
             //che successivamente servirà per aggiungere gli elementi alla toolbar
             List<string> elementsToAdd = new List<string>();
             string[] folderEntries = Directory.GetDirectories(AttFolder);
             foreach (string folderName in folderEntries)
-            {                
+            {
                 elementsToAdd.Add("D"+folderName);
             }
 
             string[] fileEntries = Directory.GetFiles(AttFolder);
-            
+
             foreach (string fileName in fileEntries)
             {
-                if (!((File.GetAttributes(fileName) & FileAttributes.Hidden) == FileAttributes.Hidden) || ShowHiddenFiles)
+                if (!((File.GetAttributes(fileName) & FileAttributes.Hidden) == FileAttributes.Hidden) || Load.ShowHidden)
                 {
                     elementsToAdd.Add("F" + fileName);
                 }
@@ -371,15 +668,19 @@ namespace SevenDeskBar
             //Se rilevo un link, lo apro e collezione le informazioni per
             //aggiungere un bottone per lanciare l'applicazione
             //tooltip commento del link
+            Font MeasureFont = this.MainToolbar.Font;
             foreach (string attElement in elementsToAdd)
             {
                 string attElementType = attElement.Substring(0, 1);
                 string attElementPath = attElement.Remove(0, 1);
                 ToolStripButton AttBtn = new ToolStripButton();
-                if (ShowText)
+                AttBtn.Alignment = Alignment;
+                //le immagini sono già della dimensione giusta: nessun ridimensionamento automatico
+                AttBtn.ImageScaling = ToolStripItemImageScaling.None;
+                if (Load.ShowText)
                 {
                     AttBtn.DisplayStyle = ToolStripItemDisplayStyle.ImageAndText;
-                    if (LargeIcons)
+                    if (Load.LargeIcons)
                     {
                         AttBtn.TextImageRelation = TextImageRelation.ImageAboveText;
                     }
@@ -394,27 +695,28 @@ namespace SevenDeskBar
                 }
                 //Gestione rendering del bottone per gestire caso immagine+testo
                 string BtnString = Path.GetFileNameWithoutExtension(attElementPath);
+                if (String.IsNullOrEmpty(BtnString))
+                {
+                    BtnString = attElementPath;
+                }
                 string OrigString = BtnString;
-                if (LargeIcons)
+                //il testo viene misurato con il carattere effettivo della toolbar
+                int MaxTextWidth = 0;
+                if (Load.LargeIcons)
+                {
+                    MaxTextWidth = this.Scaled(73);
+                }
+                else if (Load.TopOrBottom)
+                {
+                    MaxTextWidth = this.Scaled(138);
+                }
+                if (MaxTextWidth > 0)
                 {
                     int CutIndex = 1;
-                    
-                    while (TextRenderer.MeasureText(BtnString, AttBtn.Font).Width > AttBtn.Width + 50)
+                    while (CutIndex < OrigString.Length && TextRenderer.MeasureText(BtnString, MeasureFont).Width > MaxTextWidth)
                     {
                         BtnString = OrigString.Substring(0, OrigString.Length - CutIndex) + "...";
                         CutIndex++;
-                    }
-                }
-                else
-                {
-                    if (TopOrBottom)
-                    {
-                        int CutIndex = 1;
-                        while (TextRenderer.MeasureText(BtnString, AttBtn.Font).Width > AttBtn.Width + 115)
-                        {
-                            BtnString = OrigString.Substring(0, OrigString.Length - CutIndex) + "...";
-                            CutIndex++;
-                        }
                     }
                 }
                 AttBtn.Text = BtnString;
@@ -427,117 +729,24 @@ namespace SevenDeskBar
                 AttBtn.DragDrop += new System.Windows.Forms.DragEventHandler(this.ToolStripButton_DragDrop);
                 AttBtn.MouseEnter += new System.EventHandler(this.MainForm_MouseEnter);
                 AttBtn.MouseDown += new System.Windows.Forms.MouseEventHandler(this.ToolStripButton_MouseDown);
-                if (attElementType == "D")
+                try
                 {
-                    //Directory
-                    try
-                    {
-                        Icon FileIcon;
-                        if (LargeIcons)
-                        {
-                            FileIcon = ShellIcon.GetLargeIcon(attElementPath);
-                        }
-                        else
-                        {
-                            FileIcon = ShellIcon.GetSmallIcon(attElementPath);
-                        }
-                        AttBtn.Image = FileIcon.ToBitmap();
-                        FileIcon.Dispose();
-                    }
-                    catch
-                    {
-                        NoError = false;
-                        ErrorMessages += String.Format(ResourceMessages.ErrorFolderInclusion, attElementPath);
-                    }
-                    this.MainToolbar.Items.Add(AttBtn);
-                    AttBtn = null;
+                    AttBtn.Image = this.LoadItemBitmap(attElementPath, attElementType == "D", IconSize);
                 }
-                else
+                catch
                 {
-                    //File
-                    if (Path.GetExtension(attElementPath).ToUpper() == ".LNK")
-                    {
-                        ShellLink link = new ShellLink();
-                        try
-                        {
-                            link.Open(attElementPath);
-                            Icon FileIcon;
-                            if (LargeIcons)
-                            {
-                                FileIcon = link.LargeIcon;
-                            }
-                            else
-                            {
-                                FileIcon = link.SmallIcon;
-                            }
-
-                            AttBtn.Image = FileIcon.ToBitmap();
-                            link.Dispose();
-                            FileIcon.Dispose();
-                        }
-                        catch
-                        {
-                            //Provo a esrarre l'icona dall'exe
-                            try
-                            {
-                                Icon FileIcon = Icon.ExtractAssociatedIcon(attElementPath);
-                                AttBtn.Image = FileIcon.ToBitmap();
-                                FileIcon.Dispose();
-                            }
-                            catch
-                            {
-                                //provo a estrarre l'icona dalla shell
-                                try
-                                {
-                                    Icon FileIcon;
-                                    if (LargeIcons)
-                                    {
-                                        FileIcon = ShellIcon.GetLargeIcon(attElementPath);
-                                    }
-                                    else
-                                    {
-                                        FileIcon = ShellIcon.GetSmallIcon(attElementPath);
-                                    }
-                                    AttBtn.Image = FileIcon.ToBitmap();
-                                    FileIcon.Dispose();
-                                }
-                                catch
-                                {
-                                    NoError = false;
-                                    ErrorMessages += String.Format(ResourceMessages.ErrorFileInclusion, attElementPath);
-                                }
-                            }
-
-                        }
-                    }
-                    else if (Path.GetExtension(attElementPath).ToUpper() == ".EXE")
-                    {
-                        //Recupero icona e informazioni del file eseguibile
-                        Icon FileIcon = Icon.ExtractAssociatedIcon(attElementPath);
-                        AttBtn.Image = FileIcon.ToBitmap();
-                        FileIcon.Dispose();
-                    }
-                    else
-                    {
-                        //File generico, recupero icona dalla shell
-                        Icon FileIcon;
-                        if (LargeIcons)
-                        {
-                            FileIcon = ShellIcon.GetLargeIcon(attElementPath);
-                        }
-                        else
-                        {
-                            FileIcon = ShellIcon.GetSmallIcon(attElementPath);
-                        }
-                        AttBtn.Image = FileIcon.ToBitmap();
-                        FileIcon.Dispose();
-                    }
-                    this.MainToolbar.Items.Add(AttBtn);
-                    AttBtn = null;
+                    AttBtn.Image = null;
                 }
+                if (AttBtn.Image == null)
+                {
+                    NoError = false;
+                    ErrorMessages += String.Format(attElementType == "D" ? ResourceMessages.ErrorFolderInclusion : ResourceMessages.ErrorFileInclusion, attElementPath);
+                }
+                Target.Add(AttBtn);
+                this._ItemFolder[AttBtn] = AttFolder;
             }
 
-            if (FolderWatcher)
+            if (Load.FolderWatcher)
             {
                 CreateFolderWatcher(AttFolder);
             }
@@ -629,21 +838,15 @@ namespace SevenDeskBar
 
         void StartApplicationFromButton(string AppPath)
         {
-            if (Path.GetExtension(AppPath).ToUpper() == ".LNK")
-            {
-                    ShellLink link = new ShellLink();
-                    try
-                    {
-                        link.Open(AppPath);
-                    }
-                    finally
-                    {
-                        link.Dispose();
-                    }
-            }
+            //Il collegamento (.lnk) viene aperto direttamente dalla shell di Windows.
+            //In precedenza veniva prima "risolto" con IShellLink.Resolve e un timeout di 1 ms:
+            //sulle cartelle di rete (I:\Temp, \\server\share\temp) la risoluzione andava in
+            //timeout (0x800705B4) e l'eccezione non gestita bloccava l'applicazione.
             try
             {
-                Process.Start(AppPath);
+                ProcessStartInfo psi = new ProcessStartInfo(AppPath);
+                psi.UseShellExecute = true;
+                Process.Start(psi);
             }
             catch
             {
@@ -706,7 +909,24 @@ namespace SevenDeskBar
         private void impostazioniToolStripMenuItem_Click(object sender, EventArgs e)
         {
             FormSettings MySettings = new FormSettings();
-            if (MySettings.ShowDialog() == DialogResult.OK)
+            DialogResult Result = MySettings.ShowDialog();
+            //Cambio di lingua nelle impostazioni: la finestra viene ricreata nella nuova
+            //lingua (con i valori non ancora salvati), così anche il layout specifico
+            //della lingua e lo zoom (DPI) sono applicati correttamente.
+            while (Result == DialogResult.Retry)
+            {
+                FormSettings.SettingsDraft Draft = MySettings.Draft;
+                MySettings.Dispose();
+                MySettings = new FormSettings(Draft);
+                Result = MySettings.ShowDialog();
+            }
+            MySettings.Dispose();
+            if (Result != DialogResult.OK)
+            {
+                //lingua eventualmente cambiata ma non salvata: torno a quella impostata
+                LanguageManager.ChangeLanguage(this);
+            }
+            if (Result == DialogResult.OK)
             {
                 if (Program.bRebootNeeded)
                 {
@@ -836,23 +1056,31 @@ namespace SevenDeskBar
                 FileInfo[] files = new FileInfo[1];
                 files[0] = new FileInfo(AttBtn.Tag.ToString());
                 Point ShowPos = Cursor.Position;
-                switch (this.Edge)
+                bool AlignRight = false;
+                bool AlignBottom = false;
+                //Il menu si apre sul lato interno della barra e si "allontana" dal bordo,
+                //così resta sullo stesso monitor della barra (ticket #24: con la barra sul
+                //bordo destro del monitor centrale il menu finiva sul monitor di destra).
+                //Per gli elementi dell'elenco a comparsa il menu si apre dove si trova il mouse.
+                switch (AttBtn.Owner == this.MainToolbar ? this.Edge : AppBarEdges.Float)
                 {
                     case AppBarEdges.Left:
-                        ShowPos.X = this.Width;
+                        ShowPos.X = this.Bounds.Right;
                         break;
                     case AppBarEdges.Right:
-                        ShowPos.X = this.Left;
+                        ShowPos.X = this.Bounds.Left;
+                        AlignRight = true;
                         break;
                     case AppBarEdges.Top:
-                        ShowPos.Y = this.Height ;
+                        ShowPos.Y = this.Bounds.Bottom;
                         break;
                     case AppBarEdges.Bottom:
-                        ShowPos.Y = this.Top;
+                        ShowPos.Y = this.Bounds.Top;
+                        AlignBottom = true;
                         break;
                 }
-                
-                scm.ShowContextMenu(files, ShowPos);
+
+                scm.ShowContextMenu(files, ShowPos, AlignRight, AlignBottom);
                 AttBtn = null;
                 scm = null;
             }
@@ -909,18 +1137,22 @@ namespace SevenDeskBar
 
         private void timerAutoHide_Tick(object sender, EventArgs e)
         {
-            
+            if (this._PopupOpen)
+            {
+                //finché l'elenco a comparsa è aperto la toolbar non si nasconde
+                this.timerAutoHide.Enabled = false;
+                return;
+            }
             if (!this._RightClickFired)
             {
                 if (this.ToolbarIsHide)
                 {
                     SevenDeskBar.Properties.Settings MySettings = new SevenDeskBar.Properties.Settings();
                     MySettings.Reload();
-                    int StandardHeightWidth = MySettings.ToolbarHeightWidth;
+                    int StandardHeightWidth = this.Scaled(MySettings.ToolbarHeightWidth);
                     if (this.Edge == AppBarEdges.Top || this.Edge == AppBarEdges.Bottom)
                     {
-                        this.StandardHeight = StandardHeightWidth + 4;
-                        this.MainToolbar.Height = 34;
+                        this.StandardHeight = StandardHeightWidth;
                     }
                     else
                     {
@@ -930,13 +1162,19 @@ namespace SevenDeskBar
                 }
                 else
                 {
+                    //quando la toolbar si nasconde lo scorrimento torna all'inizio
+                    if (this._ScrollOffset != 0)
+                    {
+                        this._ScrollOffset = 0;
+                        this.ApplyScroll();
+                    }
                     if (this.Edge == AppBarEdges.Top || this.Edge == AppBarEdges.Bottom)
                     {
-                        this.StandardHeight = 4;
+                        this.StandardHeight = Math.Max(4, this.Scaled(4));
                     }
                     else
                     {
-                        this.StandardWidth = 4;
+                        this.StandardWidth = Math.Max(4, this.Scaled(4));
                     }
                 }
                 this.ToolbarIsHide = !this.ToolbarIsHide;
@@ -1034,12 +1272,13 @@ namespace SevenDeskBar
                 // create a writer to the stream...
                 StreamWriter writeStream = new StreamWriter(userConfigFile);
 
-                foreach (Object AttBtn in this.MainToolbar.Items)
+                //ordine di visualizzazione (le cartelle allineate alla fine sono
+                //memorizzate nella toolbar in ordine inverso)
+                foreach (ToolStripItem AttBtn in this.DisplayOrderItems())
                 {
-                    if (AttBtn is ToolStripButton)
+                    if (AttBtn is ToolStripButton && !(AttBtn is ToolbarControlButton))
                     {
-                        ToolStripButton TmpBtn = (ToolStripButton)AttBtn;
-                        writeStream.WriteLine(TmpBtn.Tag);
+                        writeStream.WriteLine(AttBtn.Tag);
                     }
                 }
                 // clean up...
@@ -1065,30 +1304,35 @@ namespace SevenDeskBar
 
     }
 
+    /// <summary>
+    /// Disegno personalizzato di icona + testo. Le impostazioni (testo, icone grandi)
+    /// possono essere diverse per ogni cartella, quindi si decide elemento per elemento:
+    /// testo sotto l'icona (icone grandi) o accanto (icone piccole).
+    /// </summary>
     public class MyRenderer : ToolStripProfessionalRenderer
     {
-
-        bool _LargeIcon;
-        bool _TopOrBottom;
-
         public MyRenderer()
         {
         }
 
-        public MyRenderer(bool LargeIcon, bool TopOrBottom)
+        private static bool IsCustomItem(ToolStripItem Item)
         {
-            this._LargeIcon = LargeIcon;
-            this._TopOrBottom = TopOrBottom;
+            return Item is ToolStripButton && !(Item is ToolbarControlButton)
+                && Item.DisplayStyle == ToolStripItemDisplayStyle.ImageAndText;
         }
 
+        private static bool IsLarge(ToolStripItem Item)
+        {
+            return Item.TextImageRelation == TextImageRelation.ImageAboveText;
+        }
 
         protected override void OnRenderItemImage(ToolStripItemImageRenderEventArgs e)
         {
             int x;
             int y;
-            if (e.Item is ToolStripButton)
+            if (IsCustomItem(e.Item) && e.Image != null)
             {
-                if (this._LargeIcon)
+                if (IsLarge(e.Item))
                 {
                     x = e.Item.Width / 2 - e.Image.Width / 2;
                     y = 0;
@@ -1108,15 +1352,19 @@ namespace SevenDeskBar
 
         protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
         {
-            if (e.Item is ToolStripButton)
+            if (IsCustomItem(e.Item))
             {
-                if (this._LargeIcon)
+                using (SolidBrush TextBrush = new SolidBrush(e.Item.ForeColor))
                 {
-                    e.Graphics.DrawString(e.Item.Text, e.Item.Font, new SolidBrush(e.Item.ForeColor), 0, e.Item.Height - TextRenderer.MeasureText(e.Item.Text, e.Item.Font).Height-3 );
-                }
-                else
-                {
-                    e.Graphics.DrawString(e.Item.Text, e.Item.Font, new SolidBrush(e.Item.ForeColor), e.Item.Image.Width, e.Item.Height / 2 - TextRenderer.MeasureText(e.Item.Text, e.Item.Font).Height/2);
+                    if (IsLarge(e.Item))
+                    {
+                        e.Graphics.DrawString(e.Item.Text, e.Item.Font, TextBrush, 0, e.Item.Height - TextRenderer.MeasureText(e.Item.Text, e.Item.Font).Height-3 );
+                    }
+                    else
+                    {
+                        int ImageWidth = e.Item.Image != null ? e.Item.Image.Width : 0;
+                        e.Graphics.DrawString(e.Item.Text, e.Item.Font, TextBrush, ImageWidth, e.Item.Height / 2 - TextRenderer.MeasureText(e.Item.Text, e.Item.Font).Height/2);
+                    }
                 }
             }
             else

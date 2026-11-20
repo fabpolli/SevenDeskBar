@@ -166,5 +166,70 @@ namespace SevenDeskBar.Properties {
                 this["ShowHidden"] = value;
             }
         }
+
+        /// <summary>Font dei testi della toolbar (stringa FontConverter, vuota = predefinito)</summary>
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string TextFont {
+            get {
+                return ((string)(this["TextFont"]));
+            }
+            set {
+                this["TextFont"] = value;
+            }
+        }
+
+        /// <summary>Colore dei testi della toolbar (formato HTML, vuoto = predefinito)</summary>
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string TextColor {
+            get {
+                return ((string)(this["TextColor"]));
+            }
+            set {
+                this["TextColor"] = value;
+            }
+        }
+
+        /// <summary>Gestione elementi in eccesso: 0 = elenco a comparsa, 1 = scorrimento della barra</summary>
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int OverflowMode {
+            get {
+                return ((int)(this["OverflowMode"]));
+            }
+            set {
+                this["OverflowMode"] = value;
+            }
+        }
+
+        /// <summary>Numero massimo di colonne dell'elenco a comparsa (barre verticali)</summary>
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public int OverflowColumns {
+            get {
+                return ((int)(this["OverflowColumns"]));
+            }
+            set {
+                this["OverflowColumns"] = value;
+            }
+        }
+        
+        /// <summary>Opzioni specifiche delle singole cartelle (vedi FolderOptions)</summary>
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string FolderOptions {
+            get {
+                return ((string)(this["FolderOptions"]));
+            }
+            set {
+                this["FolderOptions"] = value;
+            }
+        }
     }
 }

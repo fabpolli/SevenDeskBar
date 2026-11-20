@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -235,7 +235,7 @@
     <value>Bottom, Right</value>
   </data>
   <data name="buttonClose.Location" type="System.Drawing.Point, System.Drawing">
-    <value>287, 426</value>
+    <value>287, 538</value>
   </data>
   <data name="buttonClose.Size" type="System.Drawing.Size, System.Drawing">
     <value>75, 23</value>
@@ -262,7 +262,7 @@
     <value>Bottom, Right</value>
   </data>
   <data name="ButtonSave.Location" type="System.Drawing.Point, System.Drawing">
-    <value>206, 425</value>
+    <value>206, 537</value>
   </data>
   <data name="ButtonSave.Size" type="System.Drawing.Size, System.Drawing">
     <value>75, 23</value>
@@ -718,7 +718,7 @@
     <value>Bottom, Left, Right</value>
   </data>
   <data name="ButtonDeleteOrderData.Location" type="System.Drawing.Point, System.Drawing">
-    <value>15, 425</value>
+    <value>15, 537</value>
   </data>
   <data name="ButtonDeleteOrderData.Size" type="System.Drawing.Size, System.Drawing">
     <value>186, 23</value>
@@ -899,7 +899,7 @@
     <value>6, 13</value>
   </data>
   <data name="$this.ClientSize" type="System.Drawing.Size, System.Drawing">
-    <value>382, 460</value>
+    <value>382, 572</value>
   </data>
   <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>

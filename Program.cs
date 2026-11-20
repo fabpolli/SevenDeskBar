@@ -26,6 +26,18 @@ namespace SevenDeskBar
         /// 
         public static bool bRebootNeeded = false;
 
+        /// <summary>
+        /// Font con cui sono state disegnate le finestre (AutoScaleDimensions 6x13).
+        /// Con il supporto DPI per monitor il font predefinito di Windows Forms viene
+        /// restituito già "ridotto" per 96 DPI (es. 6,6pt a 125%): la scalatura automatica
+        /// non scatterebbe e le finestre resterebbero piccole con i testi tagliati.
+        /// Impostandolo esplicitamente prima di InitializeComponent la scalatura funziona.
+        /// </summary>
+        public static System.Drawing.Font DialogFont()
+        {
+            return new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
+        }
+
         [STAThread]
         static void Main()
         {

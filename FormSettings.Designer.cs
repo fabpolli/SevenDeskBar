@@ -57,8 +57,20 @@
             this.buttonUp = new System.Windows.Forms.Button();
             this.toolTipFolderMove = new System.Windows.Forms.ToolTip(this.components);
             this.CheckShowHidden = new System.Windows.Forms.CheckBox();
+            this.ButtonFolderOptions = new System.Windows.Forms.Button();
+            this.panelExtra = new System.Windows.Forms.Panel();
+            this.ButtonFont = new System.Windows.Forms.Button();
+            this.ButtonColor = new System.Windows.Forms.Button();
+            this.ButtonFontReset = new System.Windows.Forms.Button();
+            this.LabelFontPreview = new System.Windows.Forms.Label();
+            this.LabelOverflow = new System.Windows.Forms.Label();
+            this.ComboOverflow = new System.Windows.Forms.ComboBox();
+            this.LabelOverflowColumns = new System.Windows.Forms.Label();
+            this.NumericOverflowColumns = new System.Windows.Forms.NumericUpDown();
             ((System.ComponentModel.ISupportInitialize)(this.ToolbarWidthHeight)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.NumericAutoHideInterval)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.NumericOverflowColumns)).BeginInit();
+            this.panelExtra.SuspendLayout();
             this.SuspendLayout();
             // 
             // label1
@@ -280,10 +292,81 @@
             // 
             // FormSettings
             // 
+            // ButtonFolderOptions: opzioni specifiche della cartella selezionata
+            this.ButtonFolderOptions.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.ButtonFolderOptions.Location = new System.Drawing.Point(170, 183);
+            this.ButtonFolderOptions.Name = "ButtonFolderOptions";
+            this.ButtonFolderOptions.Size = new System.Drawing.Size(85, 23);
+            this.ButtonFolderOptions.UseVisualStyleBackColor = true;
+            this.ButtonFolderOptions.Click += new System.EventHandler(this.ButtonFolderOptions_Click);
+            // panelExtra: carattere/colore dei testi ed elementi in eccesso
+            this.panelExtra.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.panelExtra.Controls.Add(this.ButtonFont);
+            this.panelExtra.Controls.Add(this.ButtonColor);
+            this.panelExtra.Controls.Add(this.ButtonFontReset);
+            this.panelExtra.Controls.Add(this.LabelFontPreview);
+            this.panelExtra.Controls.Add(this.LabelOverflow);
+            this.panelExtra.Controls.Add(this.ComboOverflow);
+            this.panelExtra.Controls.Add(this.LabelOverflowColumns);
+            this.panelExtra.Controls.Add(this.NumericOverflowColumns);
+            this.panelExtra.Location = new System.Drawing.Point(0, 422);
+            this.panelExtra.Name = "panelExtra";
+            this.panelExtra.Size = new System.Drawing.Size(382, 112);
+            // ButtonFont
+            this.ButtonFont.Location = new System.Drawing.Point(15, 0);
+            this.ButtonFont.Name = "ButtonFont";
+            this.ButtonFont.Size = new System.Drawing.Size(110, 23);
+            this.ButtonFont.UseVisualStyleBackColor = true;
+            this.ButtonFont.Click += new System.EventHandler(this.ButtonFont_Click);
+            // ButtonColor
+            this.ButtonColor.Location = new System.Drawing.Point(131, 0);
+            this.ButtonColor.Name = "ButtonColor";
+            this.ButtonColor.Size = new System.Drawing.Size(110, 23);
+            this.ButtonColor.UseVisualStyleBackColor = true;
+            this.ButtonColor.Click += new System.EventHandler(this.ButtonColor_Click);
+            // ButtonFontReset
+            this.ButtonFontReset.Location = new System.Drawing.Point(247, 0);
+            this.ButtonFontReset.Name = "ButtonFontReset";
+            this.ButtonFontReset.Size = new System.Drawing.Size(115, 23);
+            this.ButtonFontReset.UseVisualStyleBackColor = true;
+            this.ButtonFontReset.Click += new System.EventHandler(this.ButtonFontReset_Click);
+            // LabelFontPreview
+            this.LabelFontPreview.AutoEllipsis = true;
+            this.LabelFontPreview.BackColor = System.Drawing.SystemColors.Window;
+            this.LabelFontPreview.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.LabelFontPreview.Location = new System.Drawing.Point(15, 28);
+            this.LabelFontPreview.Name = "LabelFontPreview";
+            this.LabelFontPreview.Size = new System.Drawing.Size(347, 24);
+            this.LabelFontPreview.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // LabelOverflow
+            this.LabelOverflow.AutoSize = true;
+            this.LabelOverflow.Location = new System.Drawing.Point(16, 62);
+            this.LabelOverflow.Name = "LabelOverflow";
+            // ComboOverflow
+            this.ComboOverflow.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.ComboOverflow.Location = new System.Drawing.Point(150, 59);
+            this.ComboOverflow.Name = "ComboOverflow";
+            this.ComboOverflow.Size = new System.Drawing.Size(212, 21);
+            this.ComboOverflow.SelectedIndexChanged += new System.EventHandler(this.ComboOverflow_SelectedIndexChanged);
+            // LabelOverflowColumns
+            this.LabelOverflowColumns.AutoSize = true;
+            this.LabelOverflowColumns.Location = new System.Drawing.Point(16, 89);
+            this.LabelOverflowColumns.Name = "LabelOverflowColumns";
+            // NumericOverflowColumns
+            this.NumericOverflowColumns.Location = new System.Drawing.Point(150, 87);
+            this.NumericOverflowColumns.Maximum = new decimal(new int[] { 10, 0, 0, 0 });
+            this.NumericOverflowColumns.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            this.NumericOverflowColumns.Name = "NumericOverflowColumns";
+            this.NumericOverflowColumns.Size = new System.Drawing.Size(55, 20);
+            this.NumericOverflowColumns.Value = new decimal(new int[] { 1, 0, 0, 0 });
+            //
             this.AcceptButton = this.ButtonSave;
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.buttonClose;
+            this.Controls.Add(this.panelExtra);
+            this.Controls.Add(this.ButtonFolderOptions);
             this.Controls.Add(this.CheckShowHidden);
             this.Controls.Add(this.buttonUp);
             this.Controls.Add(this.buttonDown);
@@ -313,6 +396,9 @@
             this.Load += new System.EventHandler(this.FormSettings_Load);
             ((System.ComponentModel.ISupportInitialize)(this.ToolbarWidthHeight)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.NumericAutoHideInterval)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.NumericOverflowColumns)).EndInit();
+            this.panelExtra.ResumeLayout(false);
+            this.panelExtra.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -347,5 +433,15 @@
         private System.Windows.Forms.Button buttonUp;
         private System.Windows.Forms.ToolTip toolTipFolderMove;
         private System.Windows.Forms.CheckBox CheckShowHidden;
+        private System.Windows.Forms.Button ButtonFolderOptions;
+        private System.Windows.Forms.Panel panelExtra;
+        private System.Windows.Forms.Button ButtonFont;
+        private System.Windows.Forms.Button ButtonColor;
+        private System.Windows.Forms.Button ButtonFontReset;
+        private System.Windows.Forms.Label LabelFontPreview;
+        private System.Windows.Forms.Label LabelOverflow;
+        private System.Windows.Forms.ComboBox ComboOverflow;
+        private System.Windows.Forms.Label LabelOverflowColumns;
+        private System.Windows.Forms.NumericUpDown NumericOverflowColumns;
     }
 }

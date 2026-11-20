@@ -1,3 +1,30 @@
+Version 1.2.0.0
+=============================
+Native high DPI support (per monitor): toolbar, icons, texts and windows are drawn sharp at any zoom level and are redrawn when the zoom changes
+Ticket 16: per-folder settings (title, text, large icons) - "Options..." button or double click on a folder in the settings window
+Ticket 17: fixed endless redraws after saving the settings (appbar repositioning ping-pong, restart at every save with Aero enabled)
+	With auto hide the toolbar no longer reserves screen space: showing/hiding it does not resize the maximized windows any more
+Ticket 18: icons always drawn at the same size (shortcuts to folders, broken shortcuts...)
+Ticket 19: toolbar on the left/right side no longer covers the Windows taskbar
+Ticket 22: drag files or folders on an empty area of the toolbar to create a shortcut in the nearest folder section
+	New per-folder option "Align at the end of the toolbar" to place a folder section at the bottom/right of the toolbar
+Ticket 24: the right click menu of the icons opens on the same monitor of the toolbar
+Ticket 26: the toolbar stays always on top also on Windows 10/11
+Changing language in the settings window now recreates the window in the new language (keeping the values not yet saved)
+Fixed: an error in a folder prevented the following folders from being loaded
+Version 1.1.0.0
+=============================
+Project converted from Visual Studio 2012 / .NET 3.5 to SDK format / .NET Framework 4.8 (build: dotnet build -c Release)
+New settings to choose font and color of the toolbar texts
+The toolbar is redrawn automatically when resolution, zoom (DPI) or monitor configuration change
+Extra items that do not fit in the toolbar:
+	"Pop-out list": the extra items are shown in an ordered grid, as wide as the toolbar (with a configurable number of columns) and scrollable if too long
+	"Scroll the toolbar": the toolbar itself scrolls with the mouse wheel or with the arrow buttons; when the toolbar auto-hides the scroll goes back to the top
+Fixed crash (timeout 0x800705B4) opening shortcuts to subfolders of network paths (mapped drives or \\server\share)
+The toolbar is no longer hidden by "Show desktop" (Win+D)
+The toolbar no longer appears in the Alt+Tab list
+Fixed English layout of the settings window ("Auto hide after" checkbox under the delay field)
+Folder watchers are released when the toolbar is refreshed
 Version 1.0.6.6
 =============================
 Fixed ticket 13: "The file does not exist" regression

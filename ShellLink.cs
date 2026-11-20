@@ -870,7 +870,9 @@ namespace SevenDeskBar
         {
             Open(linkFile,
                 IntPtr.Zero,
-                (EShellLinkResolveFlags.SLR_ANY_MATCH | EShellLinkResolveFlags.SLR_NO_UI),
+                (EShellLinkResolveFlags.SLR_ANY_MATCH | EShellLinkResolveFlags.SLR_NO_UI |
+                 EShellLinkResolveFlags.SLR_NOSEARCH | EShellLinkResolveFlags.SLR_NOTRACK |
+                 EShellLinkResolveFlags.SLR_NOUPDATE),
                 1);
         }
 
@@ -921,17 +923,34 @@ namespace SevenDeskBar
                 flags = (uint)resolveFlags;
             }
 
+            // Resolve() only tries to "repair" a shortcut whose target has been moved.
+            // On network paths (mapped drives or \\server\share) it can easily fail
+            // with a timeout (HRESULT 0x800705B4) even if the target is perfectly valid:
+            // the shortcut data (target, icon, ...) are already available after Load(),
+            // so a failed resolution must not be considered an error.
             if (linkA == null)
             {
                 ((IPersistFile)linkW).Load(linkFile, 0); //STGM_DIRECT)
-                linkW.Resolve(hWnd, flags);
                 this.shortcutFile = linkFile;
+                try
+                {
+                    linkW.Resolve(hWnd, flags);
+                }
+                catch (COMException)
+                {
+                }
             }
             else
             {
                 ((IPersistFile)linkA).Load(linkFile, 0); //STGM_DIRECT)
-                linkA.Resolve(hWnd, flags);
                 this.shortcutFile = linkFile;
+                try
+                {
+                    linkA.Resolve(hWnd, flags);
+                }
+                catch (COMException)
+                {
+                }
             }
         }
         #endregion

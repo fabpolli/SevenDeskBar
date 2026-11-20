@@ -441,6 +441,29 @@ namespace SevenDeskBar
         /// </summary>
         /// <param name="files">FileInfos (should all be in same directory)</param>
         /// <param name="pointScreen">Where to show the menu</param>
+        // allineamento del menu rispetto al punto indicato (vedi overload sotto)
+        private TPM _AlignFlags = 0;
+        // limita il menu all'area di lavoro del monitor che contiene il punto
+        private const TPM TPM_WORKAREA = (TPM)0x10000;
+
+        /// <summary>
+        /// Shows the context menu aligned to the point: with alignRight the menu
+        /// opens to the left of the point, with alignBottom it opens above it.
+        /// Used to keep the menu on the same monitor of the toolbar.
+        /// </summary>
+        public void ShowContextMenu(FileInfo[] files, Point pointScreen, bool alignRight, bool alignBottom)
+        {
+            _AlignFlags = (alignRight ? TPM.RIGHTALIGN : 0) | (alignBottom ? TPM.BOTTOMALIGN : 0);
+            try
+            {
+                ShowContextMenu(files, pointScreen);
+            }
+            finally
+            {
+                _AlignFlags = 0;
+            }
+        }
+
         public void ShowContextMenu(FileInfo[] files, Point pointScreen)
         {
             // Release all resources first.
@@ -506,7 +529,7 @@ namespace SevenDeskBar
 
                 uint nSelected = TrackPopupMenuEx(
                     pMenu,
-                    TPM.RETURNCMD,
+                    TPM.RETURNCMD | _AlignFlags | TPM_WORKAREA,
                     pointScreen.X,
                     pointScreen.Y,
                     this.Handle,

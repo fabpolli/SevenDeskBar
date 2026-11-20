@@ -159,4 +159,73 @@
   <data name="OrderDataDeleted" xml:space="preserve">
     <value>Dati ordinamento icone eliminati</value>
   </data>
+  <data name="SettingsFontButton" xml:space="preserve">
+    <value>&amp;Carattere...</value>
+  </data>
+  <data name="SettingsColorButton" xml:space="preserve">
+    <value>C&amp;olore testo...</value>
+  </data>
+  <data name="SettingsFontReset" xml:space="preserve">
+    <value>Predefiniti</value>
+  </data>
+  <data name="SettingsFontPreview" xml:space="preserve">
+    <value>Esempio di testo</value>
+  </data>
+  <data name="SettingsOverflowLabel" xml:space="preserve">
+    <value>Elementi in eccesso</value>
+  </data>
+  <data name="SettingsOverflowPopup" xml:space="preserve">
+    <value>Elenco a comparsa</value>
+  </data>
+  <data name="SettingsOverflowScroll" xml:space="preserve">
+    <value>Scorri la barra</value>
+  </data>
+  <data name="SettingsOverflowColumns" xml:space="preserve">
+    <value>Colonne elenco</value>
+  </data>
+  <data name="ToolbarMoreItems" xml:space="preserve">
+    <value>Altri elementi</value>
+  </data>
+  <data name="ToolbarScrollBack" xml:space="preserve">
+    <value>Scorri indietro</value>
+  </data>
+  <data name="ToolbarScrollForward" xml:space="preserve">
+    <value>Scorri avanti</value>
+  </data>
+  <data name="FolderOptionsTitle" xml:space="preserve">
+    <value>Opzioni cartella</value>
+  </data>
+  <data name="FolderOptionsPath" xml:space="preserve">
+    <value>Cartella</value>
+  </data>
+  <data name="FolderOptionsBrowse" xml:space="preserve">
+    <value>&amp;Sfoglia...</value>
+  </data>
+  <data name="FolderOptionsCaption" xml:space="preserve">
+    <value>Mostra il titolo con il nome della cartella</value>
+  </data>
+  <data name="FolderOptionsText" xml:space="preserve">
+    <value>Mostra testo</value>
+  </data>
+  <data name="FolderOptionsLarge" xml:space="preserve">
+    <value>Icone grandi</value>
+  </data>
+  <data name="FolderOptionsEnd" xml:space="preserve">
+    <value>Allinea alla fine della barra (in basso / a destra)</value>
+  </data>
+  <data name="FolderOptionsHint" xml:space="preserve">
+    <value>Casella parzialmente selezionata = usa l'impostazione generale</value>
+  </data>
+  <data name="FolderOptionsSave" xml:space="preserve">
+    <value>&amp;Salva</value>
+  </data>
+  <data name="FolderOptionsCancel" xml:space="preserve">
+    <value>A&amp;nnulla</value>
+  </data>
+  <data name="SettingsFolderOptionsButton" xml:space="preserve">
+    <value>&amp;Opzioni...</value>
+  </data>
+  <data name="ErrorCreateShortcut" xml:space="preserve">
+    <value>Impossibile creare il collegamento a "{0}" nella cartella "{1}":</value>
+  </data>
 </root>

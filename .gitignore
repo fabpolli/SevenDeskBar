@@ -1,0 +1,20 @@
+# Output di compilazione
+bin/
+obj/
+.vs/
+
+# Vecchie copie di lavoro Subversion
+.svn/
+
+# File personali / temporanei di Visual Studio
+*.user
+*.suo
+UpgradeLog*.htm
+*.bak
+
+# Pacchetti di distribuzione generati (si pubblicano su SourceForge, non si versionano)
+*.7z
+*.zip
+
+# Vecchia copia dei sorgenti usata per preparare la distribuzione (sostituita dalla storia git)
+Distribution/

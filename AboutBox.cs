@@ -15,6 +15,8 @@ namespace SevenDeskBar
         {
             LanguageManager.ChangeLanguage(this);
             InitializeComponent();
+            //font esplicito dopo InitializeComponent: riscala la finestra allo zoom (vedi Program.DialogFont)
+            this.Font = Program.DialogFont();
             this.Text = String.Format(ResourceMessages.InformationAbout, AssemblyTitle);
             this.labelProductName.Text = AssemblyProduct;
             this.labelVersion.Text = String.Format(ResourceMessages.AppVersion, AssemblyVersion);

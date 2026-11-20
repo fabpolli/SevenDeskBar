@@ -159,4 +159,73 @@
   <data name="OrderDataDeleted" xml:space="preserve">
     <value>Data Sortierung Symbole gelöscht</value>
   </data>
+  <data name="SettingsFontButton" xml:space="preserve">
+    <value>Schrift&amp;art...</value>
+  </data>
+  <data name="SettingsColorButton" xml:space="preserve">
+    <value>Text&amp;farbe...</value>
+  </data>
+  <data name="SettingsFontReset" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="SettingsFontPreview" xml:space="preserve">
+    <value>Beispieltext</value>
+  </data>
+  <data name="SettingsOverflowLabel" xml:space="preserve">
+    <value>Überzählige Elemente</value>
+  </data>
+  <data name="SettingsOverflowPopup" xml:space="preserve">
+    <value>Ausklappliste</value>
+  </data>
+  <data name="SettingsOverflowScroll" xml:space="preserve">
+    <value>Leiste scrollen</value>
+  </data>
+  <data name="SettingsOverflowColumns" xml:space="preserve">
+    <value>Listenspalten</value>
+  </data>
+  <data name="ToolbarMoreItems" xml:space="preserve">
+    <value>Weitere Elemente</value>
+  </data>
+  <data name="ToolbarScrollBack" xml:space="preserve">
+    <value>Zurück scrollen</value>
+  </data>
+  <data name="ToolbarScrollForward" xml:space="preserve">
+    <value>Vorwärts scrollen</value>
+  </data>
+  <data name="FolderOptionsTitle" xml:space="preserve">
+    <value>Ordneroptionen</value>
+  </data>
+  <data name="FolderOptionsPath" xml:space="preserve">
+    <value>Ordner</value>
+  </data>
+  <data name="FolderOptionsBrowse" xml:space="preserve">
+    <value>&amp;Durchsuchen...</value>
+  </data>
+  <data name="FolderOptionsCaption" xml:space="preserve">
+    <value>Titel mit dem Ordnernamen anzeigen</value>
+  </data>
+  <data name="FolderOptionsText" xml:space="preserve">
+    <value>Text anzeigen</value>
+  </data>
+  <data name="FolderOptionsLarge" xml:space="preserve">
+    <value>Große Symbole</value>
+  </data>
+  <data name="FolderOptionsEnd" xml:space="preserve">
+    <value>Am Ende der Leiste ausrichten (unten / rechts)</value>
+  </data>
+  <data name="FolderOptionsHint" xml:space="preserve">
+    <value>Teilweise markiertes Kästchen = allgemeine Einstellung verwenden</value>
+  </data>
+  <data name="FolderOptionsSave" xml:space="preserve">
+    <value>&amp;Speichern</value>
+  </data>
+  <data name="FolderOptionsCancel" xml:space="preserve">
+    <value>Abbreche&amp;n</value>
+  </data>
+  <data name="SettingsFolderOptionsButton" xml:space="preserve">
+    <value>&amp;Optionen...</value>
+  </data>
+  <data name="ErrorCreateShortcut" xml:space="preserve">
+    <value>Die Verknüpfung zu "{0}" im Ordner "{1}" kann nicht erstellt werden:</value>
+  </data>
 </root>

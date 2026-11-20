@@ -159,4 +159,73 @@
   <data name="OrderDataDeleted" xml:space="preserve">
     <value>Le tri des données icônes supprimé</value>
   </data>
+  <data name="SettingsFontButton" xml:space="preserve">
+    <value>&amp;Police...</value>
+  </data>
+  <data name="SettingsColorButton" xml:space="preserve">
+    <value>C&amp;ouleur du texte...</value>
+  </data>
+  <data name="SettingsFontReset" xml:space="preserve">
+    <value>Par défaut</value>
+  </data>
+  <data name="SettingsFontPreview" xml:space="preserve">
+    <value>Exemple de texte</value>
+  </data>
+  <data name="SettingsOverflowLabel" xml:space="preserve">
+    <value>Éléments en excès</value>
+  </data>
+  <data name="SettingsOverflowPopup" xml:space="preserve">
+    <value>Liste contextuelle</value>
+  </data>
+  <data name="SettingsOverflowScroll" xml:space="preserve">
+    <value>Faire défiler la barre</value>
+  </data>
+  <data name="SettingsOverflowColumns" xml:space="preserve">
+    <value>Colonnes de la liste</value>
+  </data>
+  <data name="ToolbarMoreItems" xml:space="preserve">
+    <value>Plus d'éléments</value>
+  </data>
+  <data name="ToolbarScrollBack" xml:space="preserve">
+    <value>Défiler en arrière</value>
+  </data>
+  <data name="ToolbarScrollForward" xml:space="preserve">
+    <value>Défiler en avant</value>
+  </data>
+  <data name="FolderOptionsTitle" xml:space="preserve">
+    <value>Options du dossier</value>
+  </data>
+  <data name="FolderOptionsPath" xml:space="preserve">
+    <value>Dossier</value>
+  </data>
+  <data name="FolderOptionsBrowse" xml:space="preserve">
+    <value>&amp;Parcourir...</value>
+  </data>
+  <data name="FolderOptionsCaption" xml:space="preserve">
+    <value>Afficher le titre avec le nom du dossier</value>
+  </data>
+  <data name="FolderOptionsText" xml:space="preserve">
+    <value>Afficher le texte</value>
+  </data>
+  <data name="FolderOptionsLarge" xml:space="preserve">
+    <value>Grandes icônes</value>
+  </data>
+  <data name="FolderOptionsEnd" xml:space="preserve">
+    <value>Aligner à la fin de la barre (en bas / à droite)</value>
+  </data>
+  <data name="FolderOptionsHint" xml:space="preserve">
+    <value>Case partiellement cochée = utiliser le paramètre général</value>
+  </data>
+  <data name="FolderOptionsSave" xml:space="preserve">
+    <value>&amp;Enregistrer</value>
+  </data>
+  <data name="FolderOptionsCancel" xml:space="preserve">
+    <value>A&amp;nnuler</value>
+  </data>
+  <data name="SettingsFolderOptionsButton" xml:space="preserve">
+    <value>&amp;Options...</value>
+  </data>
+  <data name="ErrorCreateShortcut" xml:space="preserve">
+    <value>Impossible de créer le raccourci vers "{0}" dans le dossier "{1}" :</value>
+  </data>
 </root>

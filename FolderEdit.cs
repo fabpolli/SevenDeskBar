@@ -16,6 +16,7 @@ namespace SevenDeskBar
         public FolderEdit(string FolderPath)
         {
             InitializeComponent();
+            this.Font = Program.DialogFont();
             AttFolderPath = FolderPath;
         }
 

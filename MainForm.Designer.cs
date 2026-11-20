@@ -198,7 +198,7 @@
             this.ContextMenuStrip = this.ContextMenuForm;
             this.ControlBox = false;
             this.Controls.Add(this.MainToolbar);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Name = "MainForm";
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
