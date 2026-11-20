@@ -22,3 +22,6 @@ Distribution/
 # Scheda PAD per i siti di download: contiene nome e indirizzi email dell'autore
 Application.pad
 Application.xml
+
+# Script di distribuzione con percorsi locali
+PreparaDistribuzione.bat
