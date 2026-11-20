@@ -1,7 +1,19 @@
+SevenDeskBar
+=============================
+Desktop toolbar for Windows: shows the content of one or more folders as a toolbar docked to an edge of the screen,
+like the toolbars of the Windows XP taskbar.
+
+Project page:   https://sourceforge.net/projects/sevendeskbar/
+Downloads:      https://sourceforge.net/projects/sevendeskbar/files/
+Source code:    https://sourceforge.net/p/sevendeskbar/code/
+Git clone:      git clone https://git.code.sf.net/p/sevendeskbar/code sevendeskbar-code
+Build:          dotnet build -c Release   (requires the .NET SDK; output in bin\Release\net48)
+
 Version 1.2.0.1
 =============================
 Fixed: Visual Studio Code (and other Electron applications) did not start from the toolbar when the toolbar had been launched from a VS Code terminal
 	(the inherited ELECTRON_RUN_AS_NODE variable is now removed at startup)
+
 Version 1.2.0.0
 =============================
 Native high DPI support (per monitor): toolbar, icons, texts and windows are drawn sharp at any zoom level and are redrawn when the zoom changes
