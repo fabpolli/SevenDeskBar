@@ -7,6 +7,8 @@ Project page:   https://sourceforge.net/projects/sevendeskbar/
 Downloads:      https://sourceforge.net/projects/sevendeskbar/files/
 Source code:    https://sourceforge.net/p/sevendeskbar/code/
 Git clone:      git clone https://git.code.sf.net/p/sevendeskbar/code sevendeskbar-code
+GitHub:         https://github.com/fabpolli/SevenDeskBar
+Git clone:      git clone https://github.com/fabpolli/SevenDeskBar.git
 Build:          dotnet build -c Release   (requires the .NET SDK; output in bin\Release\net48)
 
 Version 1.2.0.2
