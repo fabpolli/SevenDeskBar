@@ -9,6 +9,9 @@ Source code:    https://sourceforge.net/p/sevendeskbar/code/
 Git clone:      git clone https://git.code.sf.net/p/sevendeskbar/code sevendeskbar-code
 Build:          dotnet build -c Release   (requires the .NET SDK; output in bin\Release\net48)
 
+Version 1.2.0.2
+=============================
+Fixed: the » button for the items that do not fit remained visible even when all the items fit in the toolbar
 Version 1.2.0.1
 =============================
 Fixed: Visual Studio Code (and other Electron applications) did not start from the toolbar when the toolbar had been launched from a VS Code terminal
