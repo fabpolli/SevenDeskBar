@@ -91,6 +91,7 @@ namespace SevenDeskBar
         private bool _PopupOpen = false;
         private DateTime _PopupClosedAt = DateTime.MinValue;
         private bool _UpdatingOverflowButtons = false;
+        private bool _OverflowUpdatePending = false;
         private ToolbarControlButton _BtnScrollBack;
         private ToolbarControlButton _BtnScrollForward;
         private ToolbarControlButton _BtnMore;
@@ -215,17 +216,42 @@ namespace SevenDeskBar
             this.UpdateOverflowButtons();
         }
 
+        /// <summary>
+        /// LayoutCompleted viene generato mentre la ToolStrip è ancora nel suo layout: se qui
+        /// si mostra o nasconde un pulsante la nuova richiesta di layout viene ignorata e il
+        /// pulsante resta disegnato (es. » visibile anche se tutti gli elementi entrano).
+        /// L'aggiornamento va quindi eseguito a layout concluso.
+        /// </summary>
         private void MainToolbar_LayoutCompleted(object sender, EventArgs e)
         {
-            this.UpdateOverflowButtons();
+            if (this._OverflowUpdatePending || this.IsDisposed || this.Disposing)
+            {
+                return;
+            }
+            if (!this.IsHandleCreated)
+            {
+                this.UpdateOverflowButtons();
+                return;
+            }
+            this._OverflowUpdatePending = true;
+            this.BeginInvoke(new MethodInvoker(delegate
+            {
+                this._OverflowUpdatePending = false;
+                if (!this.IsDisposed && !this.MainToolbar.IsDisposed)
+                {
+                    this.UpdateOverflowButtons();
+                }
+            }));
         }
 
-        private static void SetAvailable(ToolStripItem Item, bool Value)
+        private static bool SetAvailable(ToolStripItem Item, bool Value)
         {
             if (Item.Available != Value)
             {
                 Item.Available = Value;
+                return true;
             }
+            return false;
         }
 
         private void UpdateOverflowButtons()
@@ -242,9 +268,25 @@ namespace SevenDeskBar
                 bool Hidden = this.HasHiddenItems();
                 bool Scroll = this._OverflowMode == OverflowModeScroll;
                 bool ShowArrows = Scroll && (Hidden || this._ScrollOffset > 0);
-                SetAvailable(this._BtnScrollBack, ShowArrows);
-                SetAvailable(this._BtnScrollForward, ShowArrows);
-                SetAvailable(this._BtnMore, !Scroll && Hidden);
+                bool Changed = false;
+                this.MainToolbar.SuspendLayout();
+                try
+                {
+                    Changed |= SetAvailable(this._BtnScrollBack, ShowArrows);
+                    Changed |= SetAvailable(this._BtnScrollForward, ShowArrows);
+                    Changed |= SetAvailable(this._BtnMore, !Scroll && Hidden);
+                }
+                finally
+                {
+                    this.MainToolbar.ResumeLayout(false);
+                }
+                if (Changed)
+                {
+                    //nuovo layout con i pulsanti aggiornati (il LayoutCompleted che ne deriva
+                    //ricontrolla lo stato; quando nulla cambia il ciclo si ferma)
+                    this.MainToolbar.PerformLayout();
+                    this.MainToolbar.Invalidate();
+                }
                 if (this._BtnScrollBack.Enabled != (this._ScrollOffset > 0))
                 {
                     this._BtnScrollBack.Enabled = this._ScrollOffset > 0;
