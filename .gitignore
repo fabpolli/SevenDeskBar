@@ -25,3 +25,6 @@ Application.xml
 
 # Script di distribuzione con percorsi locali
 PreparaDistribuzione.bat
+
+# Materiale di lavoro non pubblicato (es. sorgente Photoshop dell'icona)
+Do not include in distribution/
